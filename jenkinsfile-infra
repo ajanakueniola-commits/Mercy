@@ -1,0 +1,85 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+    AWS_REGION           = 'us-east-2'
+  }
+
+  parameters {
+    choice(name: 'ACTION', choices: ['plan', 'apply', 'destroy'], description: 'Terraform action')
+    booleanParam(name: 'BUILD_AMIS', defaultValue: false, description: 'Build base AMI with Packer')
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build Base AMI') {
+      when { expression { params.BUILD_AMIS } }
+      steps {
+        dir('packer') {
+          sh '''
+            packer init .
+            packer build nginx-app-base.pkr.hcl
+          '''
+        }
+      }
+    }
+
+    stage('Terraform Init') {
+      steps {
+        dir('terraform') {
+          sh 'terraform init -reconfigure'
+        }
+      }
+    }
+
+    stage('Terraform Validate') {
+      steps {
+        dir('terraform') {
+          sh 'terraform validate'
+        }
+      }
+    }
+
+    stage('Terraform Plan') {
+      when { expression { params.ACTION == 'plan' || params.ACTION == 'apply' } }
+      steps {
+        dir('terraform') {
+          sh 'terraform plan'
+        }
+      }
+    }
+
+    stage('Terraform Apply') {
+      when { expression { params.ACTION == 'apply' } }
+      steps {
+        dir('terraform') {
+          sh 'terraform apply -auto-approve'
+        }
+      }
+    }
+
+    stage('Terraform Destroy') {
+      when { expression { params.ACTION == 'destroy' } }
+      steps {
+        dir('terraform') {
+          input message: 'Are you sure you want to destroy?', ok: 'Destroy'
+          sh 'terraform destroy -auto-approve'
+        }
+      }
+    }
+
+  }
+
+  post {
+    success { echo 'Infrastructure pipeline completed 🚀' }
+    failure { echo 'Infrastructure pipeline failed ❌' }
+  }
+}

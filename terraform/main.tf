@@ -1,3 +1,15 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+provider "aws" {
+  region = var.region
+}
+
 provider "aws" {
   region = var.region
 }
@@ -223,34 +235,38 @@ resource "aws_instance" "app" {
   tags = { Name = "app-${count.index}" }
 }
 
-####################
+###################
 # Jenkins Instance (Public)
-####################
-# resource "aws_instance" "jenkins" {
-#   ami                    = var.ami_id != "" ? var.ami_id : data.aws_ami.packer_or_amazon.id
-#   instance_type          = var.instance_type
-#   subnet_id              = aws_subnet.public[0].id
-#   vpc_security_group_ids = [aws_security_group.grace.id]
+###################
+resource "aws_instance" "jenkins" {
+  count                       = 1
+  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.packer_or_amazon.id
+  instance_type               = var.instance_type
+  subnet_id                   =  aws_subnet.public[count.index].id   # first public subnet
+  vpc_security_group_ids      = [aws_security_group.grace.id]
+  associate_public_ip_address = true
+  key_name                    = var.key_name
 
-#   user_data = <<-EOF
-#     #!/bin/bash
-#     yum update -y
-#     sudo yum install java-17-amazon-corretto -y
-# sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-# sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-# sudo yum install jenkins -y
-# sudo systemctl enable jenkins
-# sudo systemctl start jenkins
-# sudo yum install -y yum-utils shadow-utils
-# sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-# sudo yum install packer -y
-# sudo yum install -y yum-utils shadow-utils
-# sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-# sudo yum install terraform -y
-#   EOF
+  user_data = <<-EOF
+    #!/bin/bash
+    set -e
+  sudo yum update -y
+    sudo yum install java-17-amazon-corretto -y
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum install jenkins -y
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+sudo yum install -y yum-utils shadow-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum install packer -y
+sudo yum install -y yum-utils shadow-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum install terraform -y
+  EOF
 
-#   tags = { Name = "jenkins" }
-# }
+  tags = { Name = "jenkins" }
+}
 
 ####################
 # PostgreSQL Instance (Private)

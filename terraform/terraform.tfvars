@@ -1,2 +1,11 @@
-ami_id = "ami-xxxxxxxxxxxxxxxxx"
-key_name = "my-ssh-key-pair"
+region                     = "us-east-2"
+vpc_cidr                   = "10.0.0.0/16"
+azs                        = ["us-east-2a", "us-east-2b"]
+instance_type              = "c7i-flex.large"
+packer_ami_name_pattern    = ""
+packer_ami_owner           = ""
+ami_id                     = ""
+db_username = "appuser"
+db_password = "StrongPassw0rd!2025"
+db_name     = "gracedb"
+key_name = "ohio123"

@@ -265,3 +265,5 @@ packer/*.log
 *.backup    
 *.log
 # End of terraform/.gitignore
+.json
+packer/*.log

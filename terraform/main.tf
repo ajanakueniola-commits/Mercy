@@ -6,9 +6,6 @@ terraform {
     }
   }
 }
-provider "aws" {
-  region = var.region
-}
 
 provider "aws" {
   region = var.region
@@ -193,8 +190,9 @@ resource "aws_instance" "nginx" {
                 # Update system
                 sudo yum update -y
                 
-                # Install Nginx
+                # Install Nginx and Git
                 sudo amazon-linux-extras install nginx1 -y
+                sudo yum install git -y
                 
                 # Create custom landing page
   
